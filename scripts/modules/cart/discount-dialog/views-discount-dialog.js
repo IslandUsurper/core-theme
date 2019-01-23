@@ -65,6 +65,7 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
             });
 
             this.model.get('options').each(function(o){
+                var clearSelectedOption = false;
                 _.each(o.get('values'), function(value){
                     if(o.get('attributeDetail').usageType !== 'Extra') {
                         var foundVariationValue = _.find(filteredVaiationsBySelectedOption, function(fv){
@@ -73,12 +74,18 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                             });
                         });
                         if(!foundVariationValue){
+                            if(o.get('value') === value.value) {
+                                clearSelectedOption = true;
+                            }
                             value.isEnabled = false;
                             return;
                         }
                     }
                     value.isEnabled = true;
                 });
+                if (clearSelectedOption) {
+                    o.set('value', "");
+                }
             });
         }
     };
