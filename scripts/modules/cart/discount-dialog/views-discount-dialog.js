@@ -1,4 +1,4 @@
-define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore', 'hyprlivecontext', 'modules/views-modal-dialog', 'modules/api', 'modules/models-product', 'modules/views-location', 'modules/models-location', 'modules/models-discount', "modules/views-productimages"], function (Backbone, Hypr, $, _, HyprLiveContext, ModalDialogView, Api, ProductModels, LocationViews, LocationModels, Discount, ProductImageViews) {
+define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore', 'hyprlivecontext', 'modules/views-modal-dialog', 'modules/api', 'modules/models-product', 'modules/views-location', 'modules/models-location', 'modules/models-discount', "modules/views-productimages", "modules/dropdown"], function (Backbone, Hypr, $, _, HyprLiveContext, ModalDialogView, Api, ProductModels, LocationViews, LocationModels, Discount, ProductImageViews, Dropdown) {
 
     var ChooseProductStepView = Backbone.MozuView.extend({
         templateName: "modules/cart/discount-modal/discount-choose-product",
@@ -126,6 +126,12 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                     el: $('[data-mz-productimages]'),
                     model: me.model
                 });
+                Dropdown.init({
+                    onSelect: function(e, value){
+                        var id = $(e.currentTarget).data('mz-product-option');
+                        me.dropdownConfig(id, value);
+                    }
+                });
             }
         },
         onOptionChange: function (e) {
@@ -144,6 +150,22 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                 this.model.updateQuantity(newQuantity);
             }
         }, 500),
+        dropdownConfig: function(id, value){
+            var option = this.model.get('options').findWhere({ 'attributeFQN': id });
+            if (option) {
+                var oldValue = option.get('value');
+                if (oldValue !== value && !(oldValue === undefined && value === '')) {
+                    option.set('value', value);
+                    
+                    if(option.get('attributeDetail').usageType !== 'Extra') {
+                        markEnabledConfigOptions.call(this, option);
+                    }
+            
+                    this.oldOptions = this.model.get('options').toJSON();
+                    this.postponeRender = true;
+                }
+            }
+        },
         configure: function ($optionEl) {
             var newValue = $optionEl.val(),
                 oldValue,
