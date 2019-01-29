@@ -384,7 +384,17 @@ define(["modules/jquery-mozu", 'modules/api', "underscore", "hyprlive", "modules
             },
             {
                 displayName: 'Delete',
-                action: 'deleteWishlist'
+                action: 'deleteWishlist', 
+                hidden: function (rowData) {
+                    if(rowData) {
+                        var isOwner = (rowData.userId === require.mozuData('user').userId);
+                        var isAccountAdmin = require.mozuData('user').behaviors[MozuUtilities.Behaviors.Manage_Account_Information] || false;
+                        if(isOwner){
+                            return false
+                        }
+                        return !isAccountAdmin
+                    }
+                }
             },
             {
                 displayName: 'Copy',
@@ -393,7 +403,7 @@ define(["modules/jquery-mozu", 'modules/api', "underscore", "hyprlive", "modules
             {
                 displayName: 'Order',
                 action: 'addWishlistToCart',
-                isHidden: function () {
+                hidden: function () {
                     // 1008 = Can place orders
                     return !this.hasRequiredBehavior(1008);
                 }

@@ -22,7 +22,7 @@
                             {% if model.variationCollection && option.attributeDetail.usageType != 'Extra' && value.autoAddEnabled != true%}
                                 
                             {% else %}
-                                <li id="{{value.value}}" data-mz-product-option="{{ option.attributeFQN }}" class="{% if not value.isEnabled %}is-disabled {% endif %} {% if value.isSelected && value.isEnabled %}selectd"{% endif %} data-mz-value="{{value.value}}">{{value.stringValue|default(value.value)}}{% if value.deltaPrice and value.deltaPrice > 0 %} ( {{ value.deltaPrice|currency }} {{ labels.more }} ){% endif %}</li>
+                                <li id="{{value.value}}" data-mz-product-option="{{ option.attributeFQN }}" class="{% if not value.isEnabled %}is-disabled {% endif %} {% if value.isSelected && value.isEnabled %}selectd{% endif %}" data-mz-value="{{value.value}}">{{value.stringValue|default(value.value)}}{% if value.deltaPrice and value.deltaPrice > 0 %} ( {{ value.deltaPrice|currency }} {{ labels.more }} ){% endif %}</li>
                             {% endif %}
                         {% endfor %}
                     </ul>

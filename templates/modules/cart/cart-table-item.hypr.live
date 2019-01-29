@@ -70,7 +70,7 @@
         <span class="mz-carttable-item-autoAddDiscount-name">{{ item.productDiscount.discount.name }}</span>
         
           <span class="mz-carttable-item-autoAddDiscount-actions">
-            {% if item.productDiscount.discount.hasMultipleTargetProducts %}
+            {% if item.product.productUsage == "Configurable" %}
               <a href="javascript:;" class="mz-carttable-item-autoAddDiscount-actions" data-mz-action="updateAutoAddItem"  data-mz-cart-item="{{ item.id }}" data-mz-discount-id="{{ item.productDiscount.discount.id }}">Update</a>
             {% endif %}
             <a href="javascript:;" class="mz-carttable-item-autoAddDiscount-actions" data-mz-action="removeItem" data-mz-cart-item="{{ item.id }}">Remove</a>

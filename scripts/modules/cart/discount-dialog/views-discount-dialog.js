@@ -55,26 +55,50 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
 
     });
 
-    var markEnabledConfigOptions = function(option){
-        var variations = this.model.get('variations');
-        if (variations.length) {
-            var filteredVaiationsBySelectedOption = _.filter(this.model.get('variations'), function(variation){
-                return _.find(variation.options, function(o){
-                    return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
-                });
+    //Not Finished
+    var setOptionValueTrue = function(attributeFQN, value){
+        var option = this.model.get('options').find(function(o){
+            return o.get('attributeFQN') === fvo.attributeFQN
+        })
+        if(fvo.value === option.value) {
+            value.isEnabled = true;
+        };
+    }
+
+    var reduceByOption = function(option, variations) {
+        var filteredVriations = _.filter(variations, function(variation){
+            return _.find(variation.options, function(o){
+                return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
             });
+        });
+        return filteredVriations;     
+    }
+    
+    var markEnabledConfigOptions = function(option){
+        var self = this;
+        var variations = this.model.get('variations');
+        if (variations.length && option) {
+            var filteredVaiationsBySelectedOption = reduceByOption(option, variations);
+
+            //We loop through options twice in order to ensure we have selected vales accounted for
+            //Probably a better way to do this.
+            // this.model.get('options').each(function(o){
+            //     if(o.get('value')) {
+            //         filteredVaiationsBySelectedOption = reduceByOption(o, filteredVaiationsBySelectedOption)
+            //     }
+            // });
 
             this.model.get('options').each(function(o){
                 var clearSelectedOption = false;
-                _.each(o.get('values'), function(value){
+                _.each(o.get('values'), function(value, idx){
                     if(o.get('attributeDetail').usageType !== 'Extra') {
-                        var foundVariationValue = _.find(filteredVaiationsBySelectedOption, function(fv){
+                        var foundVariationValues = _.filter(filteredVaiationsBySelectedOption, function(fv){
                             return _.find(fv.options, function(fvo){
                                 return fvo.value === value.value;
                             });
                         });
-                        if(!foundVariationValue){
-                            if(o.get('value') === value.value) {
+                        if(!foundVariationValues.length){
+                            if(o.get('value') === value.value ) {
                                 clearSelectedOption = true;
                             }
                             value.isEnabled = false;
