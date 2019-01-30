@@ -73,20 +73,54 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
         });
         return filteredVriations;     
     }
+
+    var reduceByOption = function(option, variations) {
+        var filteredVriations = _.filter(variations, function(variation){
+            return _.find(variation.options, function(o){
+                return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
+            });
+        });
+        return filteredVriations;     
+    }
     
+    var hasOtherOptions = function(variation, options){
+        _.each(options, function(option){
+            _.each(option, function(variationOption){
+                if(variation.productCode === variationOption.productCode){
+                    isOptions = true
+                }
+            })
+        })
+    }
+
     var markEnabledConfigOptions = function(option){
         var self = this;
         var variations = this.model.get('variations');
+        var avaiableOptionsMap = [];
         if (variations.length && option) {
-            var filteredVaiationsBySelectedOption = reduceByOption(option, variations);
+            var filteredVaiationsBySelectedOption = variations;
 
             //We loop through options twice in order to ensure we have selected vales accounted for
             //Probably a better way to do this.
-            // this.model.get('options').each(function(o){
-            //     if(o.get('value')) {
-            //         filteredVaiationsBySelectedOption = reduceByOption(o, filteredVaiationsBySelectedOption)
-            //     }
-            // });
+            this.model.get('options').each(function(o){
+                avaiableOptionsMap[o.get('attributeFQN')] = [];
+                self.model.get('options').each(function(o2){
+                    if(o2.get('attributeFQN') === o.get('attributeFQN')) {
+                        avaiableOptionsMap[o.get('attributeFQN')] = reduceByOption(o, variations)
+                    }
+                })
+                _.each(avaiableOptionsMap, function(variations, index){
+                    var isSelectable = false;
+                    var otherOptions = _.without(avaiableOptionsMap, index);
+                    _.each(variations, function(variation){
+                        hasOtherOptions(variation, otherOptions)
+                    })
+                })
+                //ow for each of these do other selected values match
+                
+            });
+
+
 
             this.model.get('options').each(function(o){
                 var clearSelectedOption = false;
@@ -98,7 +132,7 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                             });
                         });
                         if(!foundVariationValues.length){
-                            if(o.get('value') === value.value ) {
+                            if(o.get('value') === value.value && option.get('attributeFQN') !== o.get('attributeFQN')) {
                                 clearSelectedOption = true;
                             }
                             value.isEnabled = false;
