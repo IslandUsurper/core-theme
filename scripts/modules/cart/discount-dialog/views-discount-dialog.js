@@ -55,16 +55,6 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
 
     });
 
-    //Not Finished
-    var setOptionValueTrue = function(attributeFQN, value){
-        var option = this.model.get('options').find(function(o){
-            return o.get('attributeFQN') === fvo.attributeFQN
-        })
-        if(fvo.value === option.value) {
-            value.isEnabled = true;
-        };
-    }
-
     var reduceByOption = function(option, variations) {
         var filteredVriations = _.filter(variations, function(variation){
             return _.find(variation.options, function(o){
@@ -77,74 +67,113 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
     var reduceByOption = function(option, variations) {
         var filteredVriations = _.filter(variations, function(variation){
             return _.find(variation.options, function(o){
-                return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
+                if(option.get('value')) {
+                    return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
+                }
+                return true;
             });
         });
         return filteredVriations;     
     }
     
-    var hasOtherOptions = function(variation, options){
-        _.each(options, function(option){
-            _.each(option, function(variationOption){
-                if(variation.productCode === variationOption.productCode){
-                    isOptions = true
+    var hasOtherOptions = function(variation, options, selectedOptionsMap){
+        var newTestVariationList = []
+        _.each(options, function(optionVariations, idx){
+            var otherOptions = _.filter(options, function(o, index){
+                return idx !== index;
+            });
+            _.each(optionVariations.value, function(optionVariation, idx){
+                var variationAvailable = true;
+                _.each(otherOptions, function(variations){
+                    hasVariation = _.find(variations.value, function(variation){
+                        return variation.productCode === optionVariation.productCode;
+                    })
+                    if(!hasVariation) variationAvailable = false;
+                })
+
+                if(variationAvailable){
+                    newTestVariationList.push(optionVariation)
                 }
             })
         })
+        return newTestVariationList;
     }
 
-    var markEnabledConfigOptions = function(option){
+    var markOptions = function(optionName, variationsToMark, selectedOptionsMap){
+        reRunForSelected = false;
+        this.model.get('options').each(function(o){
+            var clearSelectedOption = false;
+            var variationOptionMap= _.map(variationsToMark, function(variation){
+                var option = _.find(variation.options, {attributeFQN: optionName});
+                if(option) return option.value;
+                
+            })
+            
+            var clearSelectedOption = false
+            o.get('values').forEach(function(opt){
+                var hasOption = -1;
+                
+                if( o.get('attributeFQN') === optionName) {
+                    opt.isEnabled = false;
+                    hasOption = variationOptionMap.indexOf(opt.value);
+
+                    if(hasOption != -1) {
+                        opt.isEnabled = true; 
+                    } else {
+                        if(o.get('value') === opt.value && selectedOptionsMap.get('attributeFQN') !== o.get('attributeFQN')) {
+                            clearSelectedOption = true;
+                        }
+                    }
+                   
+                }
+            });
+            if (clearSelectedOption) {
+                o.set('value', "");
+                reRunForSelected = true; 
+            }
+        })
+        return reRunForSelected;
+    };
+
+    var markEnabledConfigOptions = function(selectedOptionsMap){
         var self = this;
         var variations = this.model.get('variations');
         var avaiableOptionsMap = [];
-        if (variations.length && option) {
+        if (variations.length) {
             var filteredVaiationsBySelectedOption = variations;
 
             //We loop through options twice in order to ensure we have selected vales accounted for
             //Probably a better way to do this.
             this.model.get('options').each(function(o){
-                avaiableOptionsMap[o.get('attributeFQN')] = [];
+                avaiableOptionsMap.push({'key' : o.get('attributeFQN'), 'value': []});
                 self.model.get('options').each(function(o2){
                     if(o2.get('attributeFQN') === o.get('attributeFQN')) {
-                        avaiableOptionsMap[o.get('attributeFQN')] = reduceByOption(o, variations)
-                    }
-                })
-                _.each(avaiableOptionsMap, function(variations, index){
-                    var isSelectable = false;
-                    var otherOptions = _.without(avaiableOptionsMap, index);
-                    _.each(variations, function(variation){
-                        hasOtherOptions(variation, otherOptions)
-                    })
-                })
-                //ow for each of these do other selected values match
-                
-            });
-
-
-
-            this.model.get('options').each(function(o){
-                var clearSelectedOption = false;
-                _.each(o.get('values'), function(value, idx){
-                    if(o.get('attributeDetail').usageType !== 'Extra') {
-                        var foundVariationValues = _.filter(filteredVaiationsBySelectedOption, function(fv){
-                            return _.find(fv.options, function(fvo){
-                                return fvo.value === value.value;
-                            });
+                        option = _.find(avaiableOptionsMap, function(ao){
+                            return ao.key === o.get('attributeFQN');
                         });
-                        if(!foundVariationValues.length){
-                            if(o.get('value') === value.value && option.get('attributeFQN') !== o.get('attributeFQN')) {
-                                clearSelectedOption = true;
-                            }
-                            value.isEnabled = false;
-                            return;
-                        }
+                        option.value = reduceByOption(o, variations)
                     }
-                    value.isEnabled = true;
-                });
-                if (clearSelectedOption) {
-                    o.set('value', "");
-                }
+                })
             });
+
+            var rerun = false;
+            _.each(avaiableOptionsMap, function(ao, index){
+                var isSelectable = false;
+                var otherOptions = _.filter(avaiableOptionsMap, function(o, idx){
+                    return idx !== index;
+                })
+                var variation = {};
+                var otherOpts = hasOtherOptions(variation, otherOptions, selectedOptionsMap)
+                    
+                    if(markOptions.call(self, ao.key, otherOpts, selectedOptionsMap)) {
+                        rerun = true;
+                    }
+                
+            })
+
+            if(rerun) {
+                markEnabledConfigOptions.call(self, selectedOptionsMap);
+            }
         }
     };
 
@@ -168,11 +197,11 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                         }
                     });
                 } else {
-                    var firstSelectedOption = me.model.get('options').find(function(o){
-                        return o.get('value') && o.get('value') !== "";
+                    var selectedOptionsMap = me.model.get('options').map(function(o){
+                        return { attributeFQN: {value: o .value}};
                     });
-                    if(firstSelectedOption) {
-                        markEnabledConfigOptions.call(this, firstSelectedOption);
+                    if(selectedOptionsMap) {
+                        markEnabledConfigOptions.call(this, selectedOptionsMap);
                     }
                 }
                 
