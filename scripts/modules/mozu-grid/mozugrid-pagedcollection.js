@@ -88,20 +88,16 @@ var MozuGridPagedCollection = Backbone.MozuPagedCollection.extend({
     toJSON: function(){
         var self = this;
         var j = Backbone.MozuModel.prototype.toJSON.apply(this, arguments);
-        var items = j.items || [];
         _.each(j.rowActions, function (row, idx) {
-            if(j.items){ 
-                var hidden = self.get('rowActions')[idx].hidden;
-                row.isHidden = (typeof hidden === "function") ? hidden.call(self, j.items[idx]) : hidden || false;
-            }
+            var isHidden = self.get('rowActions')[idx].isHidden;
+            row.isHidden = (typeof isHidden === "function") ? isHidden.apply(self) : isHidden || false;
         });
-        this.rowCount++
         return j;
     },
     initialize: function () {
         var me = this;
         Backbone.MozuPagedCollection.prototype.initialize.apply(this, arguments);
-        this.rowCount = 0;
+        
         if (this.columns) {
             this.set('columns', this.columns);
             this.set('rowActions', this.rowActions);

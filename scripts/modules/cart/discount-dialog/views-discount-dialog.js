@@ -58,15 +58,6 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
     var reduceByOption = function(option, variations) {
         var filteredVriations = _.filter(variations, function(variation){
             return _.find(variation.options, function(o){
-                return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
-            });
-        });
-        return filteredVriations;     
-    }
-
-    var reduceByOption = function(option, variations) {
-        var filteredVriations = _.filter(variations, function(variation){
-            return _.find(variation.options, function(o){
                 if(option.get('value')) {
                     return o.attributeFQN === option.get('attributeFQN') && o.value === option.get('value');
                 }
@@ -74,10 +65,10 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
             });
         });
         return filteredVriations;     
-    }
+    };
     
     var hasOtherOptions = function(variation, options, selectedOptionsMap){
-        var newTestVariationList = []
+        var newTestVariationList = [];
         _.each(options, function(optionVariations, idx){
             var otherOptions = _.filter(options, function(o, index){
                 return idx !== index;
@@ -85,31 +76,30 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
             _.each(optionVariations.value, function(optionVariation, idx){
                 var variationAvailable = true;
                 _.each(otherOptions, function(variations){
-                    hasVariation = _.find(variations.value, function(variation){
+                    var hasVariation = _.find(variations.value, function(variation){
                         return variation.productCode === optionVariation.productCode;
-                    })
+                    });
                     if(!hasVariation) variationAvailable = false;
-                })
+                });
 
                 if(variationAvailable){
-                    newTestVariationList.push(optionVariation)
+                    newTestVariationList.push(optionVariation);
                 }
-            })
-        })
+            });
+        });
         return newTestVariationList;
-    }
+    };
 
     var markOptions = function(optionName, variationsToMark, selectedOptionsMap){
-        reRunForSelected = false;
+        var reRunForSelected = false;
         this.model.get('options').each(function(o){
             var clearSelectedOption = false;
-            var variationOptionMap= _.map(variationsToMark, function(variation){
+            var variationOptionMap = _.map(variationsToMark, function(variation){
                 var option = _.find(variation.options, {attributeFQN: optionName});
                 if(option) return option.value;
                 
-            })
+            });
             
-            var clearSelectedOption = false
             o.get('values').forEach(function(opt){
                 var hasOption = -1;
                 
@@ -124,14 +114,13 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                             clearSelectedOption = true;
                         }
                     }
-                   
                 }
             });
             if (clearSelectedOption) {
                 o.set('value', "");
                 reRunForSelected = true; 
             }
-        })
+        });
         return reRunForSelected;
     };
 
@@ -140,7 +129,6 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
         var variations = this.model.get('variations');
         var avaiableOptionsMap = [];
         if (variations.length) {
-            var filteredVaiationsBySelectedOption = variations;
 
             //We loop through options twice in order to ensure we have selected vales accounted for
             //Probably a better way to do this.
@@ -148,28 +136,26 @@ define(['modules/backbone-mozu', 'hyprlive', 'modules/jquery-mozu', 'underscore'
                 avaiableOptionsMap.push({'key' : o.get('attributeFQN'), 'value': []});
                 self.model.get('options').each(function(o2){
                     if(o2.get('attributeFQN') === o.get('attributeFQN')) {
-                        option = _.find(avaiableOptionsMap, function(ao){
+                        var option = _.find(avaiableOptionsMap, function(ao){
                             return ao.key === o.get('attributeFQN');
                         });
-                        option.value = reduceByOption(o, variations)
+                        option.value = reduceByOption(o, variations);
                     }
-                })
+                });
             });
 
             var rerun = false;
             _.each(avaiableOptionsMap, function(ao, index){
-                var isSelectable = false;
                 var otherOptions = _.filter(avaiableOptionsMap, function(o, idx){
                     return idx !== index;
-                })
+                });
                 var variation = {};
-                var otherOpts = hasOtherOptions(variation, otherOptions, selectedOptionsMap)
-                    
-                    if(markOptions.call(self, ao.key, otherOpts, selectedOptionsMap)) {
-                        rerun = true;
-                    }
-                
-            })
+                var otherOpts = hasOtherOptions(variation, otherOptions, selectedOptionsMap);
+
+                if(markOptions.call(self, ao.key, otherOpts, selectedOptionsMap)) {
+                    rerun = true;
+                }
+            });
 
             if(rerun) {
                 markEnabledConfigOptions.call(self, selectedOptionsMap);

@@ -384,17 +384,7 @@ define(["modules/jquery-mozu", 'modules/api', "underscore", "hyprlive", "modules
             },
             {
                 displayName: 'Delete',
-                action: 'deleteWishlist', 
-                hidden: function (rowData) {
-                    if(rowData) {
-                        var isOwner = (rowData.userId === require.mozuData('user').userId);
-                        var isAccountAdmin = require.mozuData('user').behaviors[MozuUtilities.Behaviors.Manage_Account_Information] || false;
-                        if(isOwner){
-                            return false
-                        }
-                        return !isAccountAdmin
-                    }
-                }
+                action: 'deleteWishlist'
             },
             {
                 displayName: 'Copy',
